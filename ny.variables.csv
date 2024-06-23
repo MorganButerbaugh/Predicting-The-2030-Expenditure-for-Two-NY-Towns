@@ -1,0 +1,7 @@
+﻿Variable,Description
+expend,The expenditure per person in the town.
+wealth,Wealth per person in the town in terms of real estate holding.
+pop,The town's population.
+pgs,Percentage of revenue from state and federal grants/subsidies.
+density,The population per area of the town.
+income,Mean income per person in the town.

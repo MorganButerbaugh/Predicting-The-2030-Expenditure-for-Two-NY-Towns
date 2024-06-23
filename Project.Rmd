@@ -1,0 +1,131 @@
+---
+title: 'Predicting the Expenditures for two NY towns for 2030'
+author: "Morgan Buterbaugh"
+date: "11/29/2022"
+output: bookdown::word_document2
+---
+
+```{r setup, echo=F, message=F,include=FALSE}
+library(officedown)
+library(knitr)
+library(tidyverse)
+library(flextable)
+library(moderndive)
+library(ggResidpanel)
+library(Hmisc)
+
+ny<-read_csv("ny.csv")
+names(ny)
+
+fit_full<-lm(expend~.,data=ny)
+fit_reduced<-lm(expend~1,data=ny)
+
+forward<-step(fit_reduced, scope = list(lower=fit_reduced,upper=fit_full),direction = "forward")
+summary(forward)
+resid_panel(forward,plots=c("resid",'qq'))
+
+ny<-ny %>% select(-pop, -pgs, -density)
+names(ny)
+
+fit<-lm(log(expend)~log(wealth)+log(income),data=ny)
+resid_panel(fit,plots=c("resid",'qq'))
+
+new<-tibble(wealth=c(89000,115000),income=c(20000,25000))
+prediction<-predict(fit,new=new,interval="prediction")
+prediction
+summary(fit)
+sigma2<-sum(residuals(fit)^2)/911
+sigma2
+exp(prediction[1,2]+sigma2/2) #lower for Warwick
+exp(prediction[1,3]+sigma2/2) #upper for Warwick
+exp(prediction[2,2]+sigma2/2) #lower for Tuxedo
+exp(prediction[2,3]+sigma2/2) #upper for Tuxedo
+
+```
+
+# Executive Statement
+The results of the study suggest that a multiple linear regression model with a $log$ transformation using the wealth per person in the town in terms of real estate holdings and the mean income per person in the town as the independent variable successfully predicts the expenditure for the two NY towns Warwick and Tuxedo. Accurate forecasts of the expenditures of the two towns for 2030 were obtained.
+
+# Introduction
+The aim of this study is to investigate the estimates of expenditures for Warwick and Tuxedo, two towns in New York, for the year 2030 using a multiple linear regression model.
+
+## Study Design
+A sample of 914 towns located in New York were randomly selected. The population for each town and population per area of each town was recorded. The mean income of each person and wealth per person in the town in terms of real estate holdings was also recorded. Along with this information, the percentage of revenue from each state and federal grants/subsidies and the expenditure per person in the town was collected.
+
+## Variables
+The expenditure per person in the town was used as the response variable. In this study, the response variable is named 'expend'. The predictor variables were the wealth per person in the town in terms of real estate holdings, the town's population, percentage of revenue from state and federal grants/subsidies, population per area of the town, and mean income per person in the town. In this study, the predictor variables are named 'wealth', 'pop', 'pgs', 'density', and 'income' in this order respectively. Variables are in Table \@ref(tab:variables).
+
+<br><br><br><br>
+
+```{r variables, echo=F, warning=F, message=F}
+ny.variables<-read_csv("ny.variables.csv")
+flextable(ny.variables) %>% set_caption(caption="Variables used in the study") %>% add_footer_lines("The variable expend is the response variable and the variables wealth, pop, pgs, density, and income are the predictor variables.") %>% font(part="all",fontname = "Cambria") %>% autofit()
+```
+
+# Methodology
+Statistical analyses are conducted using the R Software package. The expenditure for the year 2030 for the two towns in NY was modeled based on the wealth and income via a multiple linear regression model and making a $log$ transformation based off this regression model.
+
+## Exploratory Data Analysis
+The mean, standard deviation, and interquartile range are calculated for all the variables. Histograms are made of each of variable to assess the need for transformations.
+
+## Multiple Linear Regression
+Multiple linear regression is a statistical technique that uses several predictor variables and one response variable. The general form of
+a multiple linear regression is 
+
+$$\mbox{Y} = \beta_0+\beta_1\times x_1+\beta_2\times x_2+\beta_3\times x_3 +\cdots+\beta_k\times x_k+\mbox{Error}$$ where $\beta_0$ is the intercept parameter, $\beta_1,\beta_2,\cdots,\beta_k$ are the $k+1$ regression parameters, and $x_1,x_2,\cdots,x_k$ are the predictor variables that can either be quantitative or categorical. The Error is a random variable assumed to be normally distributed with a mean of 0 and a variance of $\sigma^2$.
+
+The form of the model for this study is
+
+$$\mbox{expend} = \beta_0+\beta_1\times\mbox{wealth}+\beta_2\times\mbox{income}+\mbox{Error}$$ where $\beta_0$ is the intercept parameter, $\beta_1$ and $\beta_2$ are the regression parameters, 'wealth' and 'income' are the quantitative predictor variables, and Error is a random variable. 
+
+## Stepwise Forward Regression
+Stepwise forward regression is a method of fitting regression models in which the choice of predictive variables is carried out by an automatic procedure. The method of fitting the regression model consists of adding one independent variable at a time to the multiple linear regression equation, starting with the independent variable with the most significant probability of the correlation. Lower values indicate a preferred model. Stepwise forward regression is used to figure out which predictor variables play the most significant role in the regression model.
+
+## Prediction Intervals
+A prediction interval is an estimate of the response variable for the next unit in a study that has a particular value for the predictor variable.
+
+# Results
+The first thing I did was make histograms for all of the variables in the data set. This can be found in Figure \@ref(fig:histogram) located in the Appendix. After taking a look at each of the individual histograms, we see that they are all heavily right-skewed. This indicates that we have to make some sort of transformation, either $log$ or $sqrt$.
+
+Before completing any transformation, I ran a stepwise forward regression on the data. The results were that the wealth and income predictor variables were the most significant.The results of this model building technique can be found in the Appendix. Figure \@ref(fig:residforward) located in the Appendix shows the Resid vs Predicted and QQ plots for stepwise forward regression results.
+
+With the new regression equation, I made both a $log$ or $sqrt$ transformation and found that the $log$ transformation did a better job of modeling the data. Figure \@ref(fig:residfit) located in the Appendix shows the Resid vs Predicted and QQ plots for log transformation of the regression equation.
+
+In this study we are looking at the 95% prediction intervals for the two NY towns Warwick and Tuxedo. The projected data for 2030 for Warwick and Tuxedo are in Table \@ref(tab:projected).
+
+```{r projected, echo=F, warning=F, message=F}
+ny.projected<-read_csv("projected.csv")
+flextable(ny.projected) %>% set_caption(caption="Projected Data for the Year 2030") %>% font(part="all",fontname = "Cambria") %>% autofit()
+```
+
+The 95% prediction interval for Warwick based off the projected data for 2030 is $(152.74, 794.29)$. Hence, we are 95% confident that the expenditure for Warwick will be between \$152.74 and \$794.29 for the year 2030. The 95% prediction interval for Tuxedo based off the projected data for 2030 is $(161.10, 840.44)$. Hence, we are 95% confident that the expenditure for Tuxedo will be between \$161.10 and \$840.44 for the year 2030.
+
+# Conclusions
+The multiple linear regression was successful at prediction the expenditure of the two NY towns Warwick and Tuxedo. It is my belief that this modeling technique can be used to predict the expenditure of towns in NY based on their wealth per person in the town in terms of real estate holdings and the mean income per person in the town
+
+# Appendix
+Below are histograms, R output, and plots of the statistical analysis results.
+
+```{r histogram, echo=F, message=FALSE, warning=FALSE,fig.cap="Histograms for the variables in the study"}
+hist.data.frame(ny)
+```
+
+<br><br>
+
+```{r stepwise, echo=F, message=FALSE, warning=FALSE}
+ny<-read_csv("ny.csv")
+summary(forward)
+```
+
+<br><br>
+
+```{r residforward, echo=F, message=FALSE, warning=FALSE,fig.cap="Resid vs Predicted and QQ plots for log transformation of the regression equation."}
+ny<-read_csv("ny.csv")
+resid_panel(forward,plots=c("resid",'qq'))
+```
+<br><br>
+
+```{r residfit, echo=F, message=FALSE, warning=FALSE,fig.cap="Resid vs Predicted and QQ plots for log transformation of the regression equation."}
+ny<-read_csv("ny.csv")
+resid_panel(fit,plots=c("resid",'qq'))
+```
